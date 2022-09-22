@@ -33,7 +33,15 @@ contract Stake {
 
     event NewStake(uint256 _id, string _task);
 
-    event ValidatorConfirmation(uint256 _id, string task);
+    event ValidatorConfirmation(uint256 _id, string _task);
+
+    event TaskConfirmation(uint256 _id, string _task);
+
+    modifier isPending(uint256 id) {
+        require(id < allStakes.length);
+        require(allStakes[id].status == Status.Pending, "This transaction may have been completed already or is still uncomfirmed");
+        _;
+    }
 
     modifier isUnconfirmed(uint256 id) {
         require(id < allStakes.length);
@@ -91,6 +99,14 @@ contract Stake {
         allStakes[id].status = Status.Pending;
 
         emit ValidatorConfirmation(id, allStakes[id].task);
+    }
+
+    function taskSuccess(uint256 id) external isPending(uint256 id) nonReentrant {
+        require(msg.sender == allStakes[id].validator, "Only the validating friend can mark a task as successful");
+        (bool sent, ) = allStakes[id].stakee.call{value: msg.value}("");
+        require(sent, "Failed to send ether");
+        allStakes[id].status = Status.Success;
+        emit TaskConfirmation(id, allStakes[id].task);
     }
 
 
