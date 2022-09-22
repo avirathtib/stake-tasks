@@ -28,6 +28,8 @@ contract Stake {
 
     Stake[] allStakes = [];
 
+    address constant donationAddress = "0xDcE5d7b882840D443e107De4335EFCaE0Fd5c74A";
+
     mapping(address => uint256[]) stakeeTransactionArray;
     mapping(address => uint256[]) validatorTransactionArray;
 
@@ -35,7 +37,11 @@ contract Stake {
 
     event ValidatorConfirmation(uint256 _id, string _task);
 
-    event TaskConfirmation(uint256 _id, string _task);
+    event TaskSuccess(uint256 _id, string _task);
+
+    event TaskFailure(uint 256 _id, string _task);
+
+    event TaskStopped(uint256 _id, string _task);
 
     modifier isPending(uint256 id) {
         require(id < allStakes.length);
@@ -48,6 +54,8 @@ contract Stake {
         require(allStakes[id].status == Status.Unconfirmed, "This transaction may have been confirmed already");
         _;
     }
+
+    receive() external payable {}
 
     function commitStake(string memory name, string memory task, address stakeBuddy ) external payable nonReentrant returns(uint256) {
         require(msg.sender != stakeBuddy, "Stakee address cannot be the same as validator's address");
@@ -93,7 +101,7 @@ contract Stake {
         return validatorTransactionArray;
     }
 
-    function validatorConfirmation(uint256 id) external isUncomfirmed(uint256 id) {
+    function validatorConfirmation(uint256 id) external isUncomfirmed(uint256 id) nonReentrant {
         require(msg.sender == allStakes[id].validator, "Only the validating friend can confirm this stake");
         
         allStakes[id].status = Status.Pending;
@@ -106,13 +114,23 @@ contract Stake {
         (bool sent, ) = allStakes[id].stakee.call{value: msg.value}("");
         require(sent, "Failed to send ether");
         allStakes[id].status = Status.Success;
-        emit TaskConfirmation(id, allStakes[id].task);
+        emit TaskSuccess(id, allStakes[id].task);
     }
 
+    function taskFailure(uint256 id) external isPending(uint256 id) nonReentrant {
+        require(msg.sender == allStakes[id].validator, "Only the validating friend can mark a task as a failure");
+        (bool sent, ) = donationAddress.call{value: msg.value}("");
+        require(sent, "Failure to send ether");
+        allStakes[id].status = Status.Failure;
+        emit TaskFailure(id, allStakes[id].task);
+    }
 
-
-
-
-
+    function abortTask(uint256 id) external isUncomfirmed(uint256 id) nonReentrant {
+        require(msg.sender == allStakes[id].stakee, "Only the stakee can abort a transaction/task");
+        (bool sent, ) = allStakes[id].stakee.call{value: msg.value}("");
+        require(sent, "Failure to send ether");
+        allStakes[id].status = Status.Unstopped;
+        emit TaskStopped(id, allStakes[id].task);
+    }
 
 }
