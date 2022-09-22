@@ -5,8 +5,6 @@ import "hardhat/console.sol";
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-
-
 contract Stake is ReentrancyGuard{
 
     enum Status {
