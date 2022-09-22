@@ -33,8 +33,12 @@ contract Stake {
 
     event NewStake(uint256 _id, string _task);
 
+    event ValidatorConfirmation(uint256 _id, string task);
+
     modifier isUnconfirmed(uint256 id) {
-        require()
+        require(id < allStakes.length);
+        require(allStakes[id].status == Status.Unconfirmed, "This transaction may have been confirmed already");
+        _;
     }
 
     function commitStake(string memory name, string memory task, address stakeBuddy ) external payable nonReentrant returns(uint256) {
@@ -79,6 +83,14 @@ contract Stake {
             validatorTransactionArray[i] = getStakeFromId(ids[i]);
         }
         return validatorTransactionArray;
+    }
+
+    function validatorConfirmation(uint256 id) external isUncomfirmed(uint256 id) {
+        require(msg.sender == allStakes[id].validator, "Only the validating friend can confirm this stake");
+        
+        allStakes[id].status = Status.Pending;
+
+        emit ValidatorConfirmation(id, allStakes[id].task);
     }
 
 
