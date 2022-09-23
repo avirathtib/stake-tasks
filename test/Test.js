@@ -42,10 +42,16 @@ describe("Stake contract", function () {
 
     const allStakes = await hardhatToken.getAllStakes();
 
+    const contractBalance = await ethers.provider.getBalance(
+      hardhatToken.address
+    );
+
+    console.log(contractBalance);
+    console.log(stakeOne);
     assert.equal(allStakes[0].status, 2);
   });
 
-  it("Deployment should change the status of a transaction from Unconfirmed to Pending", async function () {
+  it("Get stakee transaction array", async function () {
     const [owner, address1, address2] = await ethers.getSigners();
 
     const Stake = await ethers.getContractFactory("Stake");
@@ -73,5 +79,33 @@ describe("Stake contract", function () {
     assert.equal(stakeeTransactionArray[0].stakeTask, "Protect the force");
     assert.equal(stakeeTransactionArray[1].stakeeName, "Darth Vader");
     assert.equal(stakeeTransactionArray[1].stakeTask, "Be a good dad to Luke");
+  });
+
+  it("Task is completed successfully", async function () {
+    const [owner, address1, address2] = await ethers.getSigners();
+
+    const Stake = await ethers.getContractFactory("Stake");
+
+    const hardhatToken = await Stake.deploy();
+
+    const stakeOne = await hardhatToken
+      .connect(address1)
+      .commitStake("Luke Skywalker", "Protect the force", address2.address, {
+        value: ethers.utils.parseEther("0.5"),
+      });
+
+    const stakeTwo = await hardhatToken
+      .connect(address1)
+      .commitStake("Darth Vader", "Be a good dad to Luke", address2.address, {
+        value: ethers.utils.parseEther("1"),
+      });
+
+    await hardhatToken.connect(address2).validatorConfirmation(0);
+
+    await hardhatToken.connect(address2).taskSuccess(0);
+
+    const allStakes = await hardhatToken.getAllStakes();
+
+    assert.equal(allStakes[0].status, 0);
   });
 });
