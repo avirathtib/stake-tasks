@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
+import "bootstrap/dist/css/bootstrap.min.css";
+import StakeForm from "./components/StakeForm";
+// import Stake from "../../artifacts/contracts/Stake.sol";
 
 function App() {
   const [currentAccount, setCurrentAccount] = useState("");
@@ -77,6 +80,7 @@ function App() {
       ) : (
         <p>Wallet connected with address {currentAccount}</p>
       )}
+      <StakeForm />
     </div>
   );
 }
