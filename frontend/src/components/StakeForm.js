@@ -9,20 +9,27 @@ function StakeForm() {
   const [task, setTask] = useState("");
   const [stakeAmount, setStakeAmount] = useState("");
   const contractAddress = "0x492d4D32105e65a60422464d30E8440377eC5E5B";
-
-  const onFormSubmit = async () => {
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const signer = provider.getSigner();
+  const contract = new ethers.Contract(contractAddress, Stake.abi, signer);
+  let lastId = 0;
+  const getAllStakes = async () => {
+    try {
+      const stakes = await contract.getAllStakes();
+      console.log(stakes);
+      console.log(stakes.length);
+      lastId = stakes.length - 1;
+      console.log(lastId);
+      onFormSubmit(lastId);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  const onFormSubmit = async (id) => {
     if (ethers.utils.isAddress(ethAddress) == false) {
       alert("Please provide a valid ETH address");
     }
-    // if (
-    //   Number.isInteger(parseInt(stakeAmount)) == false ||
-    //   parseInt(stakeAmount) <= 0
-    // ) {
-    //   alert("Please provide a valid non-negative integer amount");
-    // }
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const contract = new ethers.Contract(contractAddress, Stake.abi, signer);
+
     let overrides = { value: ethers.utils.parseEther(stakeAmount) };
     try {
       console.log("hello");
@@ -32,6 +39,7 @@ function StakeForm() {
         ethAddress,
         overrides
       );
+      console.log(id);
       console.log(data);
     } catch (err) {
       console.log("Error:", err);
@@ -81,7 +89,7 @@ function StakeForm() {
             onChange={(e) => setStakeAmount(e.target.value)}
           />
         </Form.Group>
-        <Button type="submit" variant="primary" onClick={onFormSubmit}>
+        <Button type="submit" variant="primary" onClick={getAllStakes}>
           Primary
         </Button>{" "}
       </Form>
